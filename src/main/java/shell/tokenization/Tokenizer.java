@@ -13,9 +13,9 @@ import java.util.Map;
 public class Tokenizer {
 
 	private final Map<TOKEN_TYPE, String> tokenMap = ImmutableMap.of(
-			TOKEN_TYPE.GREATER, "<",
-			TOKEN_TYPE.READ_STDIN, "-",
-			TOKEN_TYPE.LESS, ">",
+			TOKEN_TYPE.GREATER, "^>$",
+			TOKEN_TYPE.READ_STDIN, "^-$",
+			TOKEN_TYPE.LESS, "^<$",
 			TOKEN_TYPE.TEXT, ".+"
 	);
 

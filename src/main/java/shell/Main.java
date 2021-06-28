@@ -1,8 +1,6 @@
 package shell;
 
 import com.google.common.base.Stopwatch;
-import shell.tokenization.TOKEN_TYPE;
-import shell.tokenization.Token;
 import shell.tokenization.TokenBlock;
 
 import java.time.LocalDateTime;
@@ -19,8 +17,9 @@ public class Main {
 		while (true) {
 			System.out.print(getHeader());
 			final List<TokenBlock> blocks = InputManager.readCommand();
+			System.out.println(blocks.toString());
 			stopwatch.start();
-			lastExitCode = Executor.execute(List.of(new TokenBlock(List.of(new Token(TOKEN_TYPE.ERROR, "err")))));
+			lastExitCode = Executor.execute(blocks);
 			stopwatch.stop();
 			lastExecTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
 			stopwatch.reset();

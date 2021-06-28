@@ -20,11 +20,10 @@ public class InputManager {
 
 	public List<TokenBlock> readCommand() {
 		final String line = scanner.nextLine();
-		if(line.equals("exit")) {
+		if (line.equals("exit")) {
 			System.out.print("Bye Bye");
 			exit(ExitCodes.OKAY);
 		}
 		return Tokenizer.tokenize(line);
-
 	}
 }

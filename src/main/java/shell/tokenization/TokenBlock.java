@@ -10,17 +10,17 @@ import java.util.List;
 public class TokenBlock {
 
 	private final List<Token> tokens;
-	private boolean readsStdin;
-	private @Nullable TokenBlock readsFrom;
-	private @Nullable TokenBlock writesTo;
+	private boolean readsStdin = false;
+	private @Nullable TokenBlock readsFrom = null;
+	private @Nullable TokenBlock writesTo = null;
 
 	@Override
 	public String toString() {
 		return "TokenBlock{" +
 		       "tokens=" + tokens +
 		       ", readsStdin=" + readsStdin +
-		       ", readsFrom=" + (readsFrom == null ? "yes" : "no") +
-		       ", writesTo=" + (writesTo == null ? "yes" : "no") +
+		       ", readsFrom=" + (readsFrom == null ? "no" : "yes") +
+		       ", writesTo=" + (writesTo == null ? "no" : "yes") +
 		       '}';
 	}
 
