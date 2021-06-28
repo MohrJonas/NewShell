@@ -30,6 +30,4 @@ public class Main {
 		final LocalDateTime now = LocalDateTime.now();
 		return String.format("%s@%d:%d:%d=%d=%dms=> ", System.getProperty("user.name"), now.getHour(), now.getMinute(), now.getSecond(), lastExitCode, lastExecTime);
 	}
-
-
 }
