@@ -1,7 +1,7 @@
 package shell.tokenization;
 
 import lombok.Data;
-import lombok.ToString;
+import my.utils.Utils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -22,5 +22,9 @@ public class TokenBlock {
 		       ", readsFrom=" + (readsFrom == null ? "yes" : "no") +
 		       ", writesTo=" + (writesTo == null ? "yes" : "no") +
 		       '}';
+	}
+
+	public String[] asArgs() {
+		return Utils.castArray(tokens.stream().map(Token::getCmd).toArray(), String.class);
 	}
 }

@@ -26,11 +26,6 @@ public class Tokenizer {
 			final TOKEN_TYPE type = findToken(part);
 			tokenList.add(new Token(type, part));
 		}
-		log.info(tokenList.toString());
-		final var blockified = blockify(tokenList);
-		log.info(blockified.toString());
-		final var io = setIO(blockified);
-		log.info(io.toString());
 		return setIO(blockify(tokenList));
 	}
 
