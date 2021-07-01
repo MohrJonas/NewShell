@@ -8,20 +8,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import static cTools.KernelWrapper.*;
+import static shell.cTools.KernelWrapper.*;
 
 @UtilityClass
 public class Executor {
 
 	public int execute(List<TokenBlock> blocks) {
 		for (final TokenBlock block : blocks) {
-			if (block.getReadsFrom() == null && block.getWritesTo() == null) {
+			if (blocks.size() == 1) {
 				final int pid = fork();
 				final int[] status = new int[1];
 				switch (pid) {
 					case -1:
 						System.err.println("Unable to fork");
-						System.exit(ExitCodes.TERMINATED);
+						exit(ExitCodes.TERMINATED);
 						break;
 					case 0:
 						if (execv(PathResolver.resolveToPath(block.getTokens().get(0).getCmd()), block.asArgs()) < 0) {

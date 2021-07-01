@@ -1,8 +1,8 @@
-package cTools;
+package shell.cTools;
 
 public class KernelWrapper {
 	static {
-		//System.out.println(System.getProperty("java.library.path"));
+		System.out.println(System.getProperty("java.library.path"));
 		System.loadLibrary("KernelWrapper"); // actually: libKernelWrapper.so
 	}
 

@@ -7,7 +7,7 @@ import shell.tokenization.Tokenizer;
 import java.util.List;
 import java.util.Scanner;
 
-import static cTools.KernelWrapper.exit;
+import static shell.cTools.KernelWrapper.*;
 
 @UtilityClass
 public class InputManager {
