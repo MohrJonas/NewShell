@@ -15,6 +15,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		while (true) {
+			System.out.println();
 			System.out.print(getHeader());
 			final List<TokenBlock> blocks = InputManager.readCommand();
 			System.out.println(blocks.toString());

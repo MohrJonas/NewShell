@@ -7,7 +7,7 @@ import shell.tokenization.Tokenizer;
 import java.util.List;
 import java.util.Scanner;
 
-import static shell.cTools.KernelWrapper.*;
+import static cTools.KernelWrapper.*;
 
 @UtilityClass
 public class InputManager {
@@ -15,7 +15,7 @@ public class InputManager {
 	private final Scanner scanner = new Scanner(System.in);
 
 	static {
-		Runtime.getRuntime().addShutdownHook(new Thread(scanner::close));
+		//Runtime.getRuntime().addShutdownHook(new Thread(scanner::close));
 	}
 
 	public List<TokenBlock> readCommand() {

@@ -24,6 +24,6 @@ public class PathResolver {
 				if (optional.isPresent()) return optional.get().toAbsolutePath().toString();
 			}
 		}
-		return null;
+		return String.valueOf(ExitCodes.COMMAND_NOT_FOUND);
 	}
 }
