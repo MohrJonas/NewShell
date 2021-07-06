@@ -15,10 +15,10 @@ public class Main {
     private static int lastExitCode = 0;
     private static long lastExecTime = 0L;
 
+    @SuppressWarnings("InfiniteLoopStatement")
     public static void main(String[] args) {
         Logger.getLogger(Executor.class.getName()).setLevel(Level.WARNING);
         while (true) {
-            System.out.println();
             System.out.print(getHeader());
             final List<TokenBlock> blocks = InputManager.readCommand();
             stopwatch.start();

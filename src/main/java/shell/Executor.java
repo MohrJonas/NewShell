@@ -104,7 +104,7 @@ public class Executor {
                 if (fOut != null || fIn != null) {
                     if (redirectOutput(fOut, fIn) != 0) {
                         log.severe("Error redirecting output");
-                        return ExitCodes.ERROR;
+                        exit(ExitCodes.ERROR);
                     }
                 }
                 if (pipefd[0] != STDIN_FILENO && pipefd[1] != STDOUT_FILENO) {
