@@ -10,9 +10,10 @@ import java.util.List;
 public class TokenBlock {
 
     private final List<Token> tokens;
+    private @Nullable TokenBlock readsFrom;
+    private @Nullable TokenBlock writesTo;
+    private boolean used = false;
     private boolean readsStdin = false;
-    private @Nullable TokenBlock readsFrom = null;
-    private @Nullable TokenBlock writesTo = null;
 
     public String[] asArgs() {
         return Utils.castArray(tokens.stream().map(Token::getCmd).toArray(), String.class);
@@ -27,8 +28,8 @@ public class TokenBlock {
         return "TokenBlock{" +
                 "tokens=" + tokens +
                 ", readsStdin=" + readsStdin +
-                ", readsFrom=" + (readsFrom == null ? "no" : "yes") +
-                ", writesTo=" + (writesTo == null ? "no" : "yes") +
+                ", readsFrom=" + (readsFrom != null) +
+                ", writesTo=" + (writesTo != null) +
                 '}';
     }
 }

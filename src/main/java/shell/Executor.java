@@ -2,11 +2,9 @@ package shell;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
-import my.utils.Pair;
 import shell.tokenization.TokenBlock;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static cTools.KernelWrapper.*;
 
@@ -15,47 +13,97 @@ import static cTools.KernelWrapper.*;
 @UtilityClass
 public class Executor {
 
-    //[✅] cat abc          # Inhalt der Datei abc wird auf dem Terminal ausgegeben
-    //[✅] cat < abc        # Inhalt der Datei abc wird auf dem Terminal ausgegeben
-    //[✅] cat - < abc      # Inhalt der Datei abc wird auf dem Terminal ausgegeben
-    //[✅] cat abc - abc < abc   # abc wird drei mal ausgegeben
-    //[✅] cat abc > xyz    # wirkt wie "cp abc xyz"
-    //[❎] cat < abc > xxx    # wirkt wie "cp abc xxx"
-    //[❎] cat > yyy < abc    # wirkt wie "cp abc yyy"
-    //[❎] cat - > zzz < abc  # wirkt wie "cp abc zzz"
+    //[✅] [✅] cat test          # Inhalt der Datei test wird auf dem Terminal ausgegeben
+    //[✅] [✅] cat < test        # Inhalt der Datei test wird auf dem Terminal ausgegeben
+    //[✅] [✅] cat - < test      # Inhalt der Datei test wird auf dem Terminal ausgegeben
+    //[✅] [✅] cat test - test < test   # test wird drei mal ausgegeben
+    //[✅] [✅] cat test > xyz    # wirkt wie "cp test xyz"
+    //[❎] [❎] cat < test > xxx    # wirkt wie "cp test xxx"
+    //[❎] [❎] cat > yyy < test    # wirkt wie "cp test yyy"
+    //[❎] [❎] cat - > zzz < test  # wirkt wie "cp test zzz"
     public int execute(List<TokenBlock> blocks) {
-        final List<Pair<TokenBlock, Boolean>> consumptionList = blocks.stream().map(block -> new Pair<>(block, false)).collect(Collectors.toUnmodifiableList());
-        for (final Pair<TokenBlock, Boolean> pair : consumptionList) {
-            final String cmd = PathResolver.resolveToPath(pair.a.asCmd());
-            final String[] args = pair.a.asArgs();
-            final boolean reads = pair.a.getReadsFrom() != null;
-            final boolean writes = pair.a.getWritesTo() != null;
-            createProcess(cmd, args,
-                    reads ? pair.a.getReadsFrom().asCmd() : null,
-                    writes ? pair.a.getWritesTo().asCmd() : null,
-                    new int[]{STDIN_FILENO, STDOUT_FILENO},
-                    STDIN_FILENO, STDOUT_FILENO);
-            pair.b = true;
+        log.info("Starting execution blocks are: " + blocks);
+        final TokenBlock masterBlock = blocks.get(0);
+        log.info("MasterBlock is " + masterBlock);
+        if (masterBlock.getReadsFrom() == null && masterBlock.getWritesTo() == null) {
+            log.info("MasterBlock neither reads nor writes. Executing it on its own");
+            return createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), null, null, new int[2], STDIN_FILENO, STDOUT_FILENO);
+        } else if (masterBlock.getReadsFrom() != null && masterBlock.getWritesTo() != null) {
+            final TokenBlock readSlaveBlock = masterBlock.getReadsFrom();
+            final TokenBlock writeSlaveBlock = masterBlock.getWritesTo();
+            log.info("MasterBlock reads from " + readSlaveBlock);
+            log.info("MasterBlock writes to " + writeSlaveBlock);
+            final int readFd = open(readSlaveBlock.asCmd(), O_RDONLY);
+            final int writeFd = open(writeSlaveBlock.asCmd(), O_CREAT | O_WRONLY);
+            log.info("Creating Process between " + masterBlock + ", " + readSlaveBlock + " and " + writeSlaveBlock);
+            createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), readSlaveBlock.asCmd(), writeSlaveBlock.asCmd(), new int[]{STDIN_FILENO, STDOUT_FILENO}, readFd, writeFd);
+            log.info("Breaking connection between " + masterBlock + ", " + readSlaveBlock + " and " + writeSlaveBlock);
+            breakConnection(masterBlock, readSlaveBlock);
+            breakConnection(masterBlock, writeSlaveBlock);
+            close(readFd);
+            close(writeFd);
+        } else {
+            if (masterBlock.getReadsFrom() != null) {
+                final TokenBlock slaveBlock = masterBlock.getReadsFrom();
+                log.info("MasterBlock reads from " + slaveBlock);
+                log.info("Creating Process between " + masterBlock + " and " + slaveBlock);
+                final int fd = open(slaveBlock.asCmd(), O_RDONLY);
+                createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), slaveBlock.asCmd(), null, new int[]{STDIN_FILENO, STDOUT_FILENO}, STDIN_FILENO, fd);
+                log.info("Breaking connection between " + masterBlock + " and " + slaveBlock);
+                breakConnection(masterBlock, slaveBlock);
+                close(fd);
+            }
+            if (masterBlock.getWritesTo() != null) {
+                final TokenBlock slaveBlock = masterBlock.getWritesTo();
+                log.info("MasterBlock writes to " + slaveBlock);
+                log.info("Creating Process between " + masterBlock + " and " + slaveBlock);
+                final int fd = open(slaveBlock.asCmd(), O_CREAT | O_WRONLY);
+                createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), null, slaveBlock.asCmd(), new int[]{STDIN_FILENO, STDOUT_FILENO}, fd, STDOUT_FILENO);
+                log.info("Breaking connection between " + masterBlock + " and " + slaveBlock);
+                breakConnection(masterBlock, slaveBlock);
+                close(fd);
+            }
         }
+        //for (final TokenBlock block : blocks) {
+        //    if (block.equals(masterBlock)) {
+        //        log.info("Block is MasterBlock. Skipping.");
+        //        continue;
+        //    }
+        //    if (block.getReadsFrom().size() == 0 && block.getWritesTo().size() == 0) {
+        //        log.info("Block neither writes nor reads nor is MasterBlock. Skipping.");
+        //        continue;
+        //    }
+        //    if (block.getReadsFrom().size() > 0) {
+        //        log.info("Block " + block + " reads from " + block.getReadsFrom().size() + " source");
+        //        block.getReadsFrom().forEach(b -> {
+        //            log.info("Creating Process between " + block + " and " + b);
+        //            createProcess(block.asCmd(), block.asArgs(), b.asCmd(), null, new int[2], STDIN_FILENO, STDOUT_FILENO);
+        //            log.info("Breaking connection between " + block + " and " + b);
+        //            breakConnection(masterBlock, b);
+        //        });
+        //    }
+        //    if (block.getWritesTo().size() > 0) {
+        //        log.info("Block " + block + " writes to " + block.getWritesTo().size() + " source");
+        //        block.getWritesTo().forEach(b -> {
+        //            log.info("Creating Process between " + block + " and " + b);
+        //            createProcess(block.asCmd(), block.asArgs(), null, b.asCmd(), new int[2], STDIN_FILENO, STDOUT_FILENO);
+        //            log.info("Breaking connection between " + block + " and " + b);
+        //            breakConnection(masterBlock, b);
+        //        });
+        //    }
+        //}
+        log.info("Done executing blocks");
         return ExitCodes.OKAY;
     }
 
-    //private void recurse(TokenBlock block) {
-    //    final String cmd = PathResolver.resolveToPath(block.asCmd());
-    //    final String[] args = block.asArgs();
-    //    final boolean reads = block.getReadsFrom() != null;
-    //    final boolean writes = block.getWritesTo() != null;
-    //    createProcess(cmd, args, reads ? block.getReadsFrom().asCmd() : null, writes ? block.getWritesTo().asCmd() : null, new int[]{STDIN_FILENO, STDOUT_FILENO}, STDIN_FILENO, STDOUT_FILENO);
-    //    if (writes) {
-    //        final TokenBlock writeBlock = block.getWritesTo();
-    //        if (writeBlock.getWritesTo() != null && writeBlock.getReadsFrom() != null) recurse(writeBlock);
-    //    }
-    //    if (reads) {
-    //        final TokenBlock readBlock = block.getReadsFrom();
-    //        if (readBlock.getWritesTo() != null && readBlock.getReadsFrom() != null) recurse(readBlock);
-    //    }
-    //}
+    private void breakConnection(TokenBlock reader, TokenBlock writer) {
+        reader.setReadsFrom(null);
+        writer.setWritesTo(null);
+    }
 
+    /*
+     * open returns file-descriptor pointing to file
+     */
     private int redirectOutput(String fOut, String fIn) {
         if (fOut != null) {
             close(STDOUT_FILENO);
@@ -74,18 +122,18 @@ public class Executor {
     /**
      * @param cmd       the command to run as absolute path f.e. /usr/bin/ls
      * @param args      the args for the cmd the first arg is the file name f.e. ls
-     * @param fIn       The file to read from
-     * @param fOut      The file to write to
+     * @param fIn       The file to read from, relative
+     * @param fOut      The file to write to, relative
      * @param pipefd    ?
      * @param newStdin  ?
      * @param newStdout ?
      */
-    private int createProcess(String cmd, String[] args, String fIn, String fOut, int[] pipefd, int newStdin, int newStdout) {
+    public int createProcess(String cmd, String[] args, String fIn, String fOut, int[] pipefd, int newStdin, int newStdout) {
         final int[] status = new int[1];
         final int pid = fork();
         switch (pid) {
             case -1:
-                log.warning("Error forking");
+                log.severe("Error forking");
                 exit(ExitCodes.TERMINATED);
                 break;
             case 0:
@@ -102,8 +150,11 @@ public class Executor {
                     }
                 }
                 if (pipefd[0] != STDIN_FILENO && pipefd[1] != STDOUT_FILENO) {
+                    //Close read end
                     close(pipefd[0]);
+                    //Make STDOUT_FILENO point to pipefd[1]
                     dup2(pipefd[1], STDOUT_FILENO);
+                    //Close write end
                     close(pipefd[1]);
                     System.err.println("Set Pipe for Write");
                 }
@@ -127,6 +178,7 @@ public class Executor {
                 }
                 return ExitCodes.OKAY;
         }
+        System.out.println();
         return ExitCodes.TERMINATED;
     }
 }

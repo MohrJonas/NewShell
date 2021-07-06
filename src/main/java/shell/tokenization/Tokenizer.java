@@ -68,20 +68,40 @@ public class Tokenizer {
 
     @SuppressWarnings("SuspiciousListRemoveInLoop")
     private List<TokenBlock> setIO(List<TokenBlock> blocks) {
-        for (int i = 0; i < blocks.size(); i++) {
-            if (blocks.get(i).getTokens().size() == 1) {
-                if (blocks.get(i).getTokens().get(0).getType() == TOKEN_TYPE.GREATER) {
-                    blocks.get(i - 1).setWritesTo(blocks.get(i + 1));
-                    blocks.get(i + 1).setReadsFrom(blocks.get(i - 1));
+        for (int i = 1; i < blocks.size(); i++) {
+            if (blocks.get(i).getTokens().size() != 1) continue;
+            switch (blocks.get(i).getTokens().get(0).getType()) {
+                case GREATER:
+                    blocks.get(0).setWritesTo(blocks.get(i + 1));
+                    blocks.get(i + 1).setReadsFrom(blocks.get(0));
                     blocks.remove(i);
-                } else if (blocks.get(i).getTokens().get(0).getType() == TOKEN_TYPE.LESS) {
-                    blocks.get(i + 1).setWritesTo(blocks.get(i - 1));
-                    blocks.get(i - 1).setReadsFrom(blocks.get(i + 1));
+                    break;
+                case LESS:
+                    blocks.get(0).setReadsFrom(blocks.get(i + 1));
+                    blocks.get(i + 1).setWritesTo(blocks.get(0));
                     blocks.remove(i);
-                }
+                    break;
             }
+
         }
         return blocks;
+        //for (int i = 0; i < blocks.size(); i++) {
+        //    if (blocks.get(i).getTokens().size() == 1) {
+        //        if (blocks.get(i).getTokens().get(0).getType() == TOKEN_TYPE.GREATER) {
+        //            //blocks.get(i - 1).setWritesTo(blocks.get(i + 1));
+        //            //blocks.get(i + 1).setReadsFrom(blocks.get(i - 1));
+        //            blocks.get(i - 1).getWritesTo().add(blocks.get(i + 1));
+        //            blocks.get(i + 1).getReadsFrom().add(blocks.get(i - 1));
+        //            blocks.remove(i);
+        //        } else if (blocks.get(i).getTokens().get(0).getType() == TOKEN_TYPE.LESS) {
+        //            //blocks.get(i + 1).setWritesTo(blocks.get(i - 1));
+        //            //blocks.get(i - 1).setReadsFrom(blocks.get(i + 1));
+        //            blocks.get(i + 1).getWritesTo().add(blocks.get(i - 1));
+        //            blocks.get(i - 1).getReadsFrom().add(blocks.get(i + 1));
+        //            blocks.remove(i);
+        //        }
+        //    }
+        //}
     }
 
     private TOKEN_TYPE findToken(String s) {
