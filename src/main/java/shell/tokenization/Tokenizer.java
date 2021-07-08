@@ -12,7 +12,7 @@ import java.util.Map;
 @UtilityClass
 public class Tokenizer {
 
-    private final Map<TOKEN_TYPE, String> tokenMap = ImmutableMap.of(
+    private final ImmutableMap<TOKEN_TYPE, String> tokenMap = ImmutableMap.of(
             TOKEN_TYPE.GREATER, "^>$",
             TOKEN_TYPE.READ_STDIN, "^-$",
             TOKEN_TYPE.LESS, "^<$",
@@ -51,7 +51,6 @@ public class Tokenizer {
                 case TEXT:
                 case ERROR:
                 case OOB:
-                    //Assume first text block is command
                     if (blockTokens.size() == 0 && blocks.size() == 0)
                         blockTokens.add(new Token(TOKEN_TYPE.PROGRAM, token.getCmd()));
                     else
@@ -85,23 +84,6 @@ public class Tokenizer {
 
         }
         return blocks;
-        //for (int i = 0; i < blocks.size(); i++) {
-        //    if (blocks.get(i).getTokens().size() == 1) {
-        //        if (blocks.get(i).getTokens().get(0).getType() == TOKEN_TYPE.GREATER) {
-        //            //blocks.get(i - 1).setWritesTo(blocks.get(i + 1));
-        //            //blocks.get(i + 1).setReadsFrom(blocks.get(i - 1));
-        //            blocks.get(i - 1).getWritesTo().add(blocks.get(i + 1));
-        //            blocks.get(i + 1).getReadsFrom().add(blocks.get(i - 1));
-        //            blocks.remove(i);
-        //        } else if (blocks.get(i).getTokens().get(0).getType() == TOKEN_TYPE.LESS) {
-        //            //blocks.get(i + 1).setWritesTo(blocks.get(i - 1));
-        //            //blocks.get(i - 1).setReadsFrom(blocks.get(i + 1));
-        //            blocks.get(i + 1).getWritesTo().add(blocks.get(i - 1));
-        //            blocks.get(i - 1).getReadsFrom().add(blocks.get(i + 1));
-        //            blocks.remove(i);
-        //        }
-        //    }
-        //}
     }
 
     private TOKEN_TYPE findToken(String s) {
