@@ -50,6 +50,24 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>maven</executable>
+                    <environmentVariables>
+                        <LD_LIBRARY_PATH>/home/jonas/Projects/Java/NewShell/src/main/java/shell/cTools</LD_LIBRARY_PATH>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
