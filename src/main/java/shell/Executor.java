@@ -8,26 +8,17 @@ import java.util.List;
 
 import static cTools.KernelWrapper.*;
 
-//TODO cleanup code, change error messages, use logger, add newline to input, change return codes to constants
 @Log
 @UtilityClass
 public class Executor {
 
-    //[✅] cat test                  Inhalt der Datei test wird auf dem Terminal ausgegeben
-    //[✅] cat < test                Inhalt der Datei test wird auf dem Terminal ausgegeben
-    //[✅] cat - < test              Inhalt der Datei test wird auf dem Terminal ausgegeben
-    //[✅] cat test - test < test    test wird drei mal ausgegeben
-    //[✅] cat test > xyz            wirkt wie "cp test xyz"
-    //[✅] cat < test > xxx          wirkt wie "cp test xxx"
-    //[✅] cat > yyy < test          wirkt wie "cp test yyy"
-    //[✅] cat - > zzz < test        wirkt wie "cp test zzz"
     public int execute(List<TokenBlock> blocks) {
         log.info("Starting execution blocks are: " + blocks);
         final TokenBlock masterBlock = blocks.get(0);
         log.info("MasterBlock is " + masterBlock);
         if (masterBlock.getReadsFrom() == null && masterBlock.getWritesTo() == null) {
             log.info("MasterBlock neither reads nor writes. Executing it on its own");
-            return createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), null, null, new int[2], STDIN_FILENO, STDOUT_FILENO);
+            return createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), null, null, STDIN_FILENO, STDOUT_FILENO);
         } else if (masterBlock.getReadsFrom() != null && masterBlock.getWritesTo() != null) {
             final TokenBlock readSlaveBlock = masterBlock.getReadsFrom();
             final TokenBlock writeSlaveBlock = masterBlock.getWritesTo();
@@ -36,7 +27,7 @@ public class Executor {
             final int readFd = open(readSlaveBlock.asCmd(), O_RDONLY);
             final int writeFd = open(writeSlaveBlock.asCmd(), O_CREAT | O_WRONLY);
             log.info("Creating Process between " + masterBlock + ", " + readSlaveBlock + " and " + writeSlaveBlock);
-            createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), readSlaveBlock.asCmd(), writeSlaveBlock.asCmd(), new int[]{STDIN_FILENO, STDOUT_FILENO}, readFd, writeFd);
+            createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), readSlaveBlock.asCmd(), writeSlaveBlock.asCmd(), readFd, writeFd);
             log.info("Breaking connection between " + masterBlock + ", " + readSlaveBlock + " and " + writeSlaveBlock);
             breakConnection(masterBlock, readSlaveBlock);
             breakConnection(masterBlock, writeSlaveBlock);
@@ -48,7 +39,7 @@ public class Executor {
                 log.info("MasterBlock reads from " + slaveBlock);
                 log.info("Creating Process between " + masterBlock + " and " + slaveBlock);
                 final int fd = open(slaveBlock.asCmd(), O_RDONLY);
-                createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), slaveBlock.asCmd(), null, new int[]{STDIN_FILENO, STDOUT_FILENO}, STDIN_FILENO, fd);
+                createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), slaveBlock.asCmd(), null, STDIN_FILENO, fd);
                 log.info("Breaking connection between " + masterBlock + " and " + slaveBlock);
                 breakConnection(masterBlock, slaveBlock);
                 close(fd);
@@ -58,7 +49,7 @@ public class Executor {
                 log.info("MasterBlock writes to " + slaveBlock);
                 log.info("Creating Process between " + masterBlock + " and " + slaveBlock);
                 final int fd = open(slaveBlock.asCmd(), O_CREAT | O_WRONLY);
-                createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), null, slaveBlock.asCmd(), new int[]{STDIN_FILENO, STDOUT_FILENO}, fd, STDOUT_FILENO);
+                createProcess(PathResolver.resolveToPath(masterBlock.asCmd()), masterBlock.asArgs(), null, slaveBlock.asCmd(), fd, STDOUT_FILENO);
                 log.info("Breaking connection between " + masterBlock + " and " + slaveBlock);
                 breakConnection(masterBlock, slaveBlock);
                 close(fd);
@@ -88,7 +79,7 @@ public class Executor {
         return ExitCodes.OKAY;
     }
 
-    public int createProcess(String cmd, String[] args, String fIn, String fOut, int[] pipefd, int newStdin, int newStdout) {
+    public int createProcess(String cmd, String[] args, String fIn, String fOut, int newStdin, int newStdout) {
         final int[] status = new int[1];
         final int pid = fork();
         switch (pid) {
@@ -106,11 +97,6 @@ public class Executor {
                         log.severe("Error redirecting output");
                         exit(ExitCodes.ERROR);
                     }
-                }
-                if (pipefd[0] != STDIN_FILENO && pipefd[1] != STDOUT_FILENO) {
-                    close(pipefd[0]);
-                    dup2(pipefd[1], STDOUT_FILENO);
-                    close(pipefd[1]);
                 }
                 if (execv(cmd, args) < 0) {
                     log.severe("Error running program");
